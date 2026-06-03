@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>AgentDAO Demo — Arc Testnet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.1/ethers.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Roboto',sans-serif;background:linear-gradient(160deg,#F5F0EB 0%,#EDE7E0 100%);min-height:100vh;color:#1a1a1a;padding-bottom:60px}
+#sb{position:sticky;top:0;z-index:100;background:#1a1a1a;color:#f0ebe4;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;font-size:13px;letter-spacing:.02em}
+#sb .lbl{font-weight:700;letter-spacing:.05em;font-size:12px;text-transform:uppercase}
+#sb .wi{display:flex;gap:20px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:#888;display:inline-block;margin-right:6px}
+.dot.on{background:#ccc}
+.hero{max-width:860px;margin:48px auto 0;padding:0 24px}
+.hero h1{font-size:28px;font-weight:700;letter-spacing:-.5px;color:#111}
+.hero .sub{margin-top:6px;font-size:13px;font-weight:400;color:#888;letter-spacing:.06em;text-transform:uppercase}
+.hero p{margin-top:12px;font-size:14px;color:#555;line-height:1.65;max-width:620px}
+.abar{max-width:860px;margin:20px auto 0;padding:0 24px}
+.abar details{border:1px solid #d4cec8;border-radius:8px;padding:12px 16px;background:#faf7f4}
+.abar summary{cursor:pointer;font-size:13px;font-weight:500;color:#333;user-select:none}
+.ag{display:grid;grid-template-columns:160px 1fr;gap:5px 10px;margin-top:10px;font-size:12px}
+.ag span:nth-child(odd){color:#888;font-weight:500}
+.ag span:nth-child(even){font-family:monospace;color:#222;word-break:break-all}
+.air{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.air label{font-size:12px;color:#888;font-weight:500;white-space:nowrap}
+.air input{flex:1;min-width:300px;font-family:monospace;font-size:12px;border:1px solid #ccc;border-radius:6px;padding:6px 10px;background:#fff;color:#111}
+.steps{max-width:860px;margin:28px auto 0;padding:0 24px;display:flex;flex-direction:column;gap:22px}
+.card{background:#faf7f4;border:1px solid #d4cec8;border-radius:12px;padding:24px 24px 20px}
+.ch{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.sn{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;background:#ede7e0;border:1px solid #d4cec8;border-radius:20px;padding:3px 10px;white-space:nowrap}
+.ch h2{font-size:16px;font-weight:600;color:#111}
+.card p{font-size:13px;color:#666;margin-bottom:10px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg.full{grid-template-columns:1fr}
+.fd{display:flex;flex-direction:column;gap:4px}
+.fd label{font-size:12px;font-weight:500;color:#555}
+.fd input,.fd textarea,.fd select{border:1px solid #ccc;border-radius:7px;padding:8px 11px;font-size:14px;font-family:'Roboto',sans-serif;background:#fff;color:#111;transition:border-color .15s}
+.fd input:focus,.fd textarea:focus,.fd select:focus{outline:none;border-color:#888}
+.fd textarea{resize:vertical;min-height:56px}
+.fd small{font-size:11px;color:#aaa}
+.btn{display:inline-flex;align-items:center;gap:8px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:500;font-family:'Roboto',sans-serif;cursor:pointer;transition:background .15s;letter-spacing:.01em;margin-top:14px}
+.btn:hover{background:#333}.btn:active{background:#000}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.sec{background:#fff;color:#1a1a1a;border:1px solid #ccc}.btn.sec:hover{background:#f0ebe4}
+.log{margin-top:12px;background:#1a1a1a;border-radius:8px;padding:10px 12px;font-family:monospace;font-size:12px;color:#ccc;min-height:40px;max-height:160px;overflow-y:auto;line-height:1.6;display:none}
+.log.on{display:block}
+.log .ll{margin-bottom:2px}.log .ll.err{color:#f08080}.log .ll.ok{color:#a0c8a0}
+.log .ll a{color:#aaddff;text-decoration:underline}
+.vg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.vr{background:#fff;border:1px solid #d4cec8;border-radius:8px;padding:12px;font-size:13px;line-height:1.7;color:#333;min-height:56px}
+.vr strong{font-weight:600;display:block;margin-bottom:5px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#888}
+.mono{font-family:monospace;font-size:11px;word-break:break-all}
+@media(max-width:600px){.fg,.vg{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div id="sb">
+  <span class="lbl">AgentDAO Demo</span>
+  <div class="wi">
+    <span><span class="dot" id="dot"></span><span id="wa">Not connected</span></span>
+    <span id="wn" style="color:#aaa"></span>
+  </div>
+</div>
+
+<div class="hero">
+  <h1>AgentDAO Demo — Arc Testnet</h1>
+  <div class="sub">Layer 7: On-Chain Governance + Dispute Arbitration</div>
+  <p>End-to-end walkthrough of the AgentDAO lifecycle: create governance proposals, cast reputation-weighted votes, execute after timelock, create dispute proposals, vote on disputes, and resolve with USDC distribution.</p>
+</div>
+
+<div class="abar">
+  <details>
+    <summary>Contract Addresses</summary>
+    <div class="ag">
+      <span>AgentIdentity</span><span>0x5Bef356f89425823FC7eebB3A6ED1A678F3b8233</span>
+      <span>AgentJob</span><span>0xD698d15F776279c0213444a779941e8E0Cbe5094</span>
+      <span>AgentOrchestrator</span><span>0xbA99f039b7892d9F546253444c95EDea822471b0</span>
+      <span>USDC</span><span>0x3600000000000000000000000000000000000000</span>
+    </div>
+    <div class="air">
+      <label>AgentDAO:</label>
+      <input type="text" id="da" placeholder="0x... (paste after deployment)" oninput="C.AgentDAO=this.value.trim()" />
+    </div>
+  </details>
+</div>
+
+<div class="steps">
+
+  <!-- Step 1: Connect Wallet -->
+  <div class="card">
+    <div class="ch"><span class="sn">Step 1</span><h2>Connect Wallet</h2></div>
+    <p>Connect MetaMask and switch to Arc Testnet (Chain ID 5042002).</p>
+    <button class="btn" onclick="connectWallet()">Connect MetaMask</button>
+    <div class="log" id="l1"></div>
+  </div>
+
+  <!-- Step 2: Create Governance Proposal -->
+  <div class="card">
+    <div class="ch"><span class="sn">Step 2</span><h2>Create Governance Proposal</h2></div>
+    <p>Submit a governance proposal. Your agent needs >= 3000 bps (30%) reputation.</p>
+    <div class="fg">
+      <div class="fd"><label>Agent Token ID</label><input id="gp-agent" placeholder="e.g. 1" /></div>
+      <div class="fd"><label>Proposal Description</label><input id="gp-desc" placeholder="e.g. Increase minimum bid to 5 USDC" /></div>
+    </div>
+    <button class="btn" onclick="createGovProposal()">Create Governance Proposal</button>
+    <div class="log" id="l2"></div>
+  </div>
+
+  <!-- Step 3: Vote For -->
+  <div class="card">
+    <div class="ch"><span class="sn">Step 3</span><h2>Vote For (Agent A)</h2></div>
+    <p>Cast a "For" vote. Voting weight equals your agent's current reputation.</p>
+    <div class="fg">
+      <div class="fd"><label>Proposal ID</label><input id="vf-prop" placeholder="e.g. 1" /></div>
+      <div class="fd"><label>Agent Token ID</label><input id="vf-agent" placeholder="e.g. 1" /></div>
+    </div>
+    <button class="btn" onclick="voteFor()">Vote For</button>
+    <div class="log" id="l3"></div>
+  </div>
+
+  <!-- Step 4: Vote Against -->
+  <div class="card">
+    <div class="ch"><span class="sn">Step 4</span><h2>Vote Against (Agent B)</h2></div>
+    <p>Cast an "Against" vote from a different agent to demonstrate weighted voting.</p>
+    <div class="fg">
+      <div class="fd"><label>Proposal ID</label><input id="va-prop" placeholder="e.g. 1" /></div>
+      <div class="fd"><label>Agent Token ID</label><input id="va-agent" placeholder="e.g. 2" /></div>
+    </div>
+    <button class="btn" onclick="voteAgainst()">Vote Against</button>
+    <div class="log" id="l4"></div>
+  </div>
+
+  <!-- Step 5: Execute After Timelock -->
+  <div class="card">
+    <div class="ch"><span class="sn">Step 5</span><h2>Execute After Timelock</h2></div>
+    <p>Execute the proposal after the 3-day voting period + 1-day timelock. Determines pass or fail based on quorum (50%) and vote tally.</p>
+    <div class="fg">
+      <div class="fd"><label>Proposal ID</label><input id="ex-prop" placeholder="e.g. 1" /></div>
+    </div>
+    <button class="btn" onclick="executeProposal()">Execute Proposal</button>
+    <div class="log" id="l5"></div>
+  </div>
+
+  <!-- Step 6: Create Dispute Proposal -->
+  <div class="card">
+    <div class="ch"><span class="sn">Step 6</span><h2>Create Dispute Proposal</h2></div>
+    <p>Escalate a contested job to the DAO for community resolution. Specify the job, the disputed agent, and escrow amount.</p>
+    <div class="fg">
+      <div class="fd"><label>Proposer Agent Token ID</label><input id="dp-agent" placeholder="e.g. 1" /></div>
+      <div class="fd"><label>Description</label><input id="dp-desc" placeholder="e.g. Agent failed to deliver work" /></div>
+      <div class="fd"><label>Job Contract Type</label>
+        <select id="dp-type">
+          <option value="0">AgentJob (Layer 2)</option>
+          <option value="1">AgentOrchestrator (Layer 4)</option>
+        </select>
+      </div>
+      <div class="fd"><label>Job ID</label><input id="dp-job" placeholder="e.g. 1" /></div>
+      <div class="fd"><label>Disputed Agent Token ID</label><input id="dp-dagent" placeholder="e.g. 2" /></div>
+      <div class="fd"><label>Client Address</label><input id="dp-client" placeholder="0x..." /></div>
+      <div class="fd"><label>Escrow Amount (USDC, 6 decimals)</label><input id="dp-amount" placeholder="e.g. 10000000" /><small>Raw 6-decimal value. 10 USDC = 10000000</small></div>
+    </div>
+    <button class="btn" onclick="createDisputeProposal()">Create Dispute Proposal</button>
+    <div class="log" id="l6"></div>
+  </div>
+
+  <!-- Step 7: Vote on Dispute -->
+  <div class="card">
+    <div class="ch"><span class="sn">Step 7</span><h2>Vote on Dispute</h2></div>
+    <p>Community votes on the dispute resolution. Choose For/Against/Abstain.</p>
+    <div class="fg">
+      <div class="fd"><label>Proposal ID</label><input id="dv-prop" placeholder="e.g. 2" /></div>
+      <div class="fd"><label>Agent Token ID</label><input id="dv-agent" placeholder="e.g. 1" /></div>
+      <div class="fd"><label>Vote Choice</label>
+        <select id="dv-choice">
+          <option value="1">For</option>
+          <option value="0">Against</option>
+          <option value="2">Abstain</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" onclick="voteDispute()">Cast Vote</button>
+    <div class="log" id="l7"></div>
+  </div>
+
+  <!-- Step 8: Resolve Dispute -->
+  <div class="card">
+    <div class="ch"><span class="sn">Step 8</span><h2>Resolve Dispute</h2></div>
+    <p>After voting period + timelock, execute the dispute proposal. If passed, USDC escrow is distributed per the outcome.</p>
+    <div class="fg">
+      <div class="fd"><label>Proposal ID</label><input id="dr-prop" placeholder="e.g. 2" /></div>
+    </div>
+    <button class="btn" onclick="resolveDispute()">Execute Dispute Resolution</button>
+    <div class="log" id="l8"></div>
+  </div>
+
+  <!-- Step 9: View Status -->
+  <div class="card">
+    <div class="ch"><span class="sn">Step 9</span><h2>View Status</h2></div>
+    <div class="fg">
+      <div class="fd"><label>Proposal ID</label><input id="vs-prop" placeholder="e.g. 1" /></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn sec" onclick="viewProposal()">Query Proposal</button>
+      <button class="btn sec" onclick="viewDispute()">Query Dispute Info</button>
+    </div>
+    <div class="vg" id="vrs" style="margin-top:14px;display:none">
+      <div class="vr" id="vr-p"><strong>Proposal</strong><span class="mono">--</span></div>
+      <div class="vr" id="vr-d"><strong>Dispute Info</strong><span class="mono">--</span></div>
+    </div>
+    <div class="log" id="l9"></div>
+  </div>
+
+</div>
+
+<script>
+const CHAIN_ID = 5042002, CHAIN_HEX = "0x4CEC52";
+const EXPLORER = "https://testnet.arcscan.app";
+const C = {
+  AgentIdentity: "0x5Bef356f89425823FC7eebB3A6ED1A678F3b8233",
+  AgentJob: "0xD698d15F776279c0213444a779941e8E0Cbe5094",
+  AgentOrchestrator: "0xbA99f039b7892d9F546253444c95EDea822471b0",
+  USDC: "0x3600000000000000000000000000000000000000",
+  AgentDAO: "",
+};
+const DAOABI = [
+  "function createGovernanceProposal(uint256 agentTokenId, string description) external returns (uint256)",
+  "function createDisputeProposal(uint256 agentTokenId, string description, uint256 jobContractType, uint256 jobId, uint256 disputedAgentId, address client, uint256 escrowAmount) external returns (uint256)",
+  "function vote(uint256 proposalId, uint256 agentTokenId, uint8 choice) external",
+  "function executeProposal(uint256 proposalId) external",
+  "function cancelProposal(uint256 proposalId) external",
+  "function depositDisputeEscrow(uint256 proposalId, uint256 amount) external",
+  "function getProposal(uint256 proposalId) external view returns (tuple(uint256 id, uint256 proposerAgentId, uint8 proposalType, string description, uint8 status, uint256 createdAt, uint256 votingEndsAt, uint256 forVotes, uint256 againstVotes, uint256 abstainVotes, uint256 voterCount, bool executed))",
+  "function getDisputeInfo(uint256 proposalId) external view returns (tuple(uint256 jobContractType, uint256 jobId, uint256 disputedAgentId, address client, uint256 escrowAmount, uint8 outcome))",
+  "function getProposalCount() external view returns (uint256)",
+  "function hasAgentVoted(uint256 proposalId, uint256 agentTokenId) external view returns (bool)",
+];
+const ERC20ABI = [
+  "function approve(address spender, uint256 amount) external returns (bool)",
+  "function allowance(address owner, address spender) external view returns (uint256)",
+];
+const PTYPES = ["Governance","DisputeResolution"];
+const PSTATUS = ["Active","Passed","Failed","Executed","Cancelled"];
+const VCHOICE = ["Against","For","Abstain"];
+const DOUTCOME = ["None","ReleaseToAgent","RefundToClient","SplitEvenly"];
+
+let provider=null, signer=null;
+
+function log(id,msg,cls=""){
+  const el=document.getElementById("l"+id);
+  el.classList.add("on");
+  const d=document.createElement("div");
+  d.className="ll"+(cls?" "+cls:"");
+  d.innerHTML=msg;
+  el.appendChild(d);
+  el.scrollTop=el.scrollHeight;
+}
+function logTx(id,hash,lbl="Tx"){
+  log(id,`${lbl}: <a href="${EXPLORER}/tx/${hash}" target="_blank">${hash.slice(0,18)}...</a>`,"ok");
+}
+function clearLog(id){const el=document.getElementById("l"+id);el.innerHTML="";el.classList.remove("on")}
+function setSB(addr,net){
+  document.getElementById("wa").textContent=addr?addr.slice(0,6)+"..."+addr.slice(-4):"Not connected";
+  document.getElementById("wn").textContent=net||"";
+  document.getElementById("dot").className="dot"+(addr?" on":"");
+}
+async function switchChain(){
+  await window.ethereum.request({method:"wallet_addEthereumChain",params:[{
+    chainId:CHAIN_HEX,chainName:"Arc Testnet",
+    nativeCurrency:{name:"USD Coin",symbol:"USDC",decimals:18},
+    rpcUrls:["https://rpc.testnet.arc.network"],
+    blockExplorerUrls:[EXPLORER],
+  }]});
+}
+async function connectWallet(){
+  clearLog(1);
+  try{
+    if(!window.ethereum) throw new Error("MetaMask not detected.");
+    log(1,"Requesting accounts...");
+    await window.ethereum.request({method:"eth_requestAccounts"});
+    const cid=parseInt(await window.ethereum.request({method:"eth_chainId"}),16);
+    if(cid!==CHAIN_ID){log(1,"Wrong network -- switching to Arc Testnet...");await switchChain();}
+    provider=new ethers.BrowserProvider(window.ethereum);
+    signer=await provider.getSigner();
+    const addr=await signer.getAddress();
+    const net=await provider.getNetwork();
+    setSB(addr,"Arc Testnet ("+net.chainId+")");
+    log(1,"Connected: "+addr,"ok");
+  }catch(e){log(1,"Error: "+(e.shortMessage||e.message),"err")}
+}
+function needSigner(id){if(!signer){log(id,"Connect wallet first (Step 1).","err");return false;}return true;}
+function needDAO(id){
+  const a=C.AgentDAO||document.getElementById("da").value.trim();
+  if(!a||!ethers.isAddress(a)){log(id,"Enter the AgentDAO address above.","err");return null;}
+  C.AgentDAO=a;return a;
+}
+function dc(){return new ethers.Contract(C.AgentDAO,DAOABI,signer);}
+function fmtUsdc(raw){return (Number(raw)/1e6).toFixed(2)+" USDC";}
+function fmtTs(ts){if(!ts||ts===0n)return"N/A";return new Date(Number(ts)*1000).toISOString().replace("T"," ").replace(/\.\d+Z$/," UTC");}
+
+async function createGovProposal(){
+  clearLog(2);if(!needSigner(2))return;if(!needDAO(2))return;
+  try{
+    const aid=BigInt(document.getElementById("gp-agent").value.trim());
+    const desc=document.getElementById("gp-desc").value.trim();
+    if(!desc) throw new Error("Description is required.");
+    log(2,"Sending createGovernanceProposal...");
+    const tx=await dc().createGovernanceProposal(aid,desc);
+    logTx(2,tx.hash,"Tx sent");
+    const r=await tx.wait();
+    log(2,"Confirmed in block "+r.blockNumber+". Voting period: 3 days.","ok");
+  }catch(e){log(2,"Error: "+(e.shortMessage||e.message),"err")}
+}
+
+async function voteFor(){
+  clearLog(3);if(!needSigner(3))return;if(!needDAO(3))return;
+  try{
+    const pid=BigInt(document.getElementById("vf-prop").value.trim());
+    const aid=BigInt(document.getElementById("vf-agent").value.trim());
+    log(3,"Sending vote (For)...");
+    const tx=await dc().vote(pid,aid,1);
+    logTx(3,tx.hash,"Tx sent");
+    const r=await tx.wait();
+    log(3,"Vote FOR recorded, block "+r.blockNumber,"ok");
+  }catch(e){log(3,"Error: "+(e.shortMessage||e.message),"err")}
+}
+
+async function voteAgainst(){
+  clearLog(4);if(!needSigner(4))return;if(!needDAO(4))return;
+  try{
+    const pid=BigInt(document.getElementById("va-prop").value.trim());
+    const aid=BigInt(document.getElementById("va-agent").value.trim());
+    log(4,"Sending vote (Against)...");
+    const tx=await dc().vote(pid,aid,0);
+    logTx(4,tx.hash,"Tx sent");
+    const r=await tx.wait();
+    log(4,"Vote AGAINST recorded, block "+r.blockNumber,"ok");
+  }catch(e){log(4,"Error: "+(e.shortMessage||e.message),"err")}
+}
+
+async function executeProposal(){
+  clearLog(5);if(!needSigner(5))return;if(!needDAO(5))return;
+  try{
+    const pid=BigInt(document.getElementById("ex-prop").value.trim());
+    log(5,"Sending executeProposal...");
+    const tx=await dc().executeProposal(pid);
+    logTx(5,tx.hash,"Tx sent");
+    const r=await tx.wait();
+    log(5,"Proposal executed, block "+r.blockNumber,"ok");
+    // Fetch final status
+    const rc=new ethers.Contract(C.AgentDAO,DAOABI,provider);
+    const p=await rc.getProposal(pid);
+    log(5,"Final status: "+PSTATUS[Number(p.status)],"ok");
+  }catch(e){log(5,"Error: "+(e.shortMessage||e.message),"err")}
+}
+
+async function createDisputeProposal(){
+  clearLog(6);if(!needSigner(6))return;const da=needDAO(6);if(!da)return;
+  try{
+    const aid=BigInt(document.getElementById("dp-agent").value.trim());
+    const desc=document.getElementById("dp-desc").value.trim();
+    const jtype=BigInt(document.getElementById("dp-type").value);
+    const jid=BigInt(document.getElementById("dp-job").value.trim());
+    const dagent=BigInt(document.getElementById("dp-dagent").value.trim());
+    const client=document.getElementById("dp-client").value.trim();
+    const amount=BigInt(document.getElementById("dp-amount").value.trim());
+    if(!desc) throw new Error("Description is required.");
+    if(!ethers.isAddress(client)) throw new Error("Invalid client address.");
+    log(6,"Sending createDisputeProposal...");
+    const tx=await dc().createDisputeProposal(aid,desc,jtype,jid,dagent,client,amount);
+    logTx(6,tx.hash,"Tx sent");
+    const r=await tx.wait();
+    log(6,"Dispute proposal created, block "+r.blockNumber,"ok");
+  }catch(e){log(6,"Error: "+(e.shortMessage||e.message),"err")}
+}
+
+async function voteDispute(){
+  clearLog(7);if(!needSigner(7))return;if(!needDAO(7))return;
+  try{
+    const pid=BigInt(document.getElementById("dv-prop").value.trim());
+    const aid=BigInt(document.getElementById("dv-agent").value.trim());
+    const choice=parseInt(document.getElementById("dv-choice").value);
+    log(7,"Sending vote ("+VCHOICE[choice]+")...");
+    const tx=await dc().vote(pid,aid,choice);
+    logTx(7,tx.hash,"Tx sent");
+    const r=await tx.wait();
+    log(7,"Vote "+VCHOICE[choice]+" recorded, block "+r.blockNumber,"ok");
+  }catch(e){log(7,"Error: "+(e.shortMessage||e.message),"err")}
+}
+
+async function resolveDispute(){
+  clearLog(8);if(!needSigner(8))return;if(!needDAO(8))return;
+  try{
+    const pid=BigInt(document.getElementById("dr-prop").value.trim());
+    log(8,"Sending executeProposal (dispute resolution)...");
+    const tx=await dc().executeProposal(pid);
+    logTx(8,tx.hash,"Tx sent");
+    const r=await tx.wait();
+    log(8,"Dispute resolved, block "+r.blockNumber,"ok");
+    const rc=new ethers.Contract(C.AgentDAO,DAOABI,provider);
+    const p=await rc.getProposal(pid);
+    log(8,"Final status: "+PSTATUS[Number(p.status)],"ok");
+    if(Number(p.proposalType)===1){
+      const d=await rc.getDisputeInfo(pid);
+      log(8,"Outcome: "+DOUTCOME[Number(d.outcome)]+" | Escrow: "+fmtUsdc(d.escrowAmount),"ok");
+    }
+  }catch(e){log(8,"Error: "+(e.shortMessage||e.message),"err")}
+}
+
+async function viewProposal(){
+  clearLog(9);if(!needSigner(9))return;const da=needDAO(9);if(!da)return;
+  try{
+    const pid=BigInt(document.getElementById("vs-prop").value.trim()||"0");
+    const rc=new ethers.Contract(da,DAOABI,provider);
+    const p=await rc.getProposal(pid);
+    const total=p.forVotes+p.againstVotes+p.abstainVotes;
+    const pctFor=total>0n?((Number(p.forVotes)/Number(total))*100).toFixed(1)+"%":"0.0%";
+    const pctAgainst=total>0n?((Number(p.againstVotes)/Number(total))*100).toFixed(1)+"%":"0.0%";
+    const pctAbstain=total>0n?((Number(p.abstainVotes)/Number(total))*100).toFixed(1)+"%":"0.0%";
+    const quorumMet=total>0n&&p.forVotes>=(total*5000n)/10000n;
+    const proj=total===0n?"No votes yet":
+      (p.forVotes>p.againstVotes&&quorumMet?"PASSING":"FAILING");
+    document.getElementById("vr-p").innerHTML=`<strong>Proposal #${pid}</strong>
+Type: ${PTYPES[Number(p.proposalType)]}<br>
+Status: ${PSTATUS[Number(p.status)]}<br>
+Proposer: Agent #${p.proposerAgentId}<br>
+Created: ${fmtTs(p.createdAt)}<br>
+Voting Ends: ${fmtTs(p.votingEndsAt)}<br>
+<br><b>Voting Stats:</b><br>
+For: ${p.forVotes} bps (${pctFor})<br>
+Against: ${p.againstVotes} bps (${pctAgainst})<br>
+Abstain: ${p.abstainVotes} bps (${pctAbstain})<br>
+Voters: ${p.voterCount}<br>
+Projection: ${proj}<br>
+<span class="mono">${p.description}</span>`;
+    document.getElementById("vrs").style.display="grid";
+    log(9,"Proposal loaded.","ok");
+  }catch(e){log(9,"Error: "+(e.shortMessage||e.message),"err")}
+}
+
+async function viewDispute(){
+  clearLog(9);if(!needSigner(9))return;const da=needDAO(9);if(!da)return;
+  try{
+    const pid=BigInt(document.getElementById("vs-prop").value.trim()||"0");
+    const rc=new ethers.Contract(da,DAOABI,provider);
+    const d=await rc.getDisputeInfo(pid);
+    const ctLabel=Number(d.jobContractType)===0?"AgentJob":"AgentOrchestrator";
+    document.getElementById("vr-d").innerHTML=`<strong>Dispute Info — Proposal #${pid}</strong>
+Job Contract: ${ctLabel} (type ${d.jobContractType})<br>
+Job ID: ${d.jobId}<br>
+Disputed Agent: #${d.disputedAgentId}<br>
+Client: <span class="mono">${d.client}</span><br>
+Escrow: ${fmtUsdc(d.escrowAmount)}<br>
+Outcome: ${DOUTCOME[Number(d.outcome)]}`;
+    document.getElementById("vrs").style.display="grid";
+    log(9,"Dispute info loaded.","ok");
+  }catch(e){log(9,"Error: "+(e.shortMessage||e.message),"err")}
+}
+
+window.addEventListener("load",async()=>{
+  if(!window.ethereum)return;
+  window.ethereum.on("accountsChanged",async(a)=>{
+    if(!a.length){provider=null;signer=null;setSB(null,null);}
+    else{provider=new ethers.BrowserProvider(window.ethereum);signer=await provider.getSigner();setSB(a[0],"Arc Testnet");}
+  });
+  window.ethereum.on("chainChanged",()=>location.reload());
+  try{
+    const a=await window.ethereum.request({method:"eth_accounts"});
+    if(a.length){provider=new ethers.BrowserProvider(window.ethereum);signer=await provider.getSigner();
+      const net=await provider.getNetwork();setSB(a[0],"Chain "+net.chainId);}
+  }catch(_){}
+});
+</script>
+</body>
+</html>
